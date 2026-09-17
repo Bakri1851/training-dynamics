@@ -170,13 +170,25 @@ I keep the percentage column because the pass criterion is defined on its maximu
 - **`svdvals` returns sorted values.** Mode identity can permute if two singular values cross. This spectrum avoids it, but the hazard is general.
 - **Two thresholds, and I had them conflated.** $2/s_{\max}$ is the blow-up threshold. It is *not* the edge of stability, which sits at $1/s_{\max}$ — half of it. With $s_{\max} = 1$ the two land at $\eta = 1$ and $\eta = 2$. As measured:
 
-  - **$\eta < 1/s_{\max}$ — converges.** Final loss 2.4e-29 at $\eta = 0.995$, i.e. machine zero.
+  - **$\eta < 1/s_{\max}$ — converges.** At $\eta = 0.995$ the final loss is machine zero. I originally quoted it as 2.4e-29, which was two significant figures of nothing: at this level the number is the square of accumulated rounding, and it moves over several orders of magnitude between seeds and between implementations of the same problem. It is not a measurement and should not be written as one.
   - **$\eta = 1/s_{\max} = 1.0$ — the fixed point loses stability.** The iterate stays bounded but never converges. The top mode is exactly marginal here (multiplier $1 - 2\eta s = -1$), so the loss decays algebraically rather than geometrically: 2.1e-5 at 6000 steps, 6.3e-6 at 20000 — a factor 3.3 for 3.3× the steps, i.e. $\sim 1/k$. Just above, it is genuinely stuck: 1.1e-2 at $\eta = 1.02$ at both 6000 and 20000 steps.
   - **$\eta \geq 2/s_{\max} = 2.0$ — escapes to infinity.** Bisection on the single-mode map $a \leftarrow a(1 + \eta(s - a))^2$ puts the boundary at 2.0000001, and it lands there from every starting point I tried ($a_0 = 10^{-6}$, $a = 0.5$, and the fixed point perturbed by $10^{-9}$ and $10^{-12}$).
 
   Why $1/s_{\max}$ is the edge of stability: the Hessian of $\tfrac{1}{2}(s - uv)^2$ at $u = v = \sqrt{s}$ is $\begin{bmatrix} s & s \\ s & s \end{bmatrix}$, with eigenvalues $2s$ and $0$. So the sharpness is $\lambda_{\max} = 2 s_{\max}$, and the standard $\eta < 2/\lambda_{\max}$ criterion gives $\eta < 1/s_{\max}$. The window $1 < \eta < 2$ — non-convergent but bounded — is the edge-of-stability regime.
 
-  **The full network escapes earlier than the scalar map does, and I should not have assumed otherwise.** The 5×5 run blows up at $\eta \approx 1.266$ (bisection; 1.2654–1.2660 across seeds 0–3), not at 2.0. The clean $\eta = 2$ boundary is a property of the scalar mode map. Above $\eta = 1$ the dynamics are chaotic, so the exact mode decoupling no longer survives contact with floating point: rounding at $10^{-16}$ is amplified and the matrix trajectory leaves the bounded attractor well before the scalar recursion would. Worth triggering deliberately — and the gap between 1.27 and 2 is the part worth understanding.
+  **The full network escapes earlier than the scalar map does, and I should not have assumed otherwise.** The 5×5 run blows up at $\eta \approx 1.266$ (bisection; 1.2654–1.2660 across seeds 0–3), not at 2.0. The clean $\eta = 2$ boundary is a property of the scalar mode map.
+
+  **My first explanation of *why* was also wrong, and it is worth recording what it got wrong.** I wrote that above $\eta = 1$ the dynamics are chaotic, so rounding at $10^{-16}$ is amplified until the trajectory leaves the bounded attractor. That makes the threshold an artefact of rounding *magnitude*, and it carries a prediction: coarser arithmetic should escape earlier. It doesn't. Bisecting on $\eta$ for blow-up in the full matrix loop:
+
+  - **Precision does not move it.** Across `float32`, `float64` and 64-bit-mantissa extended arithmetic — machine $\varepsilon$ from `1.2e-7` to `1.1e-19`, twelve orders of magnitude — the threshold is 1.2651–1.2654 for seeds 0–2, with no trend in $\varepsilon$ at all.
+  - **Nor does the size of a deliberate kick.** Adding `delta * sqrt(a0) * randn(N, N)` to both factors gives 1.2651–1.2652 for every `delta` from `1e-12` to `1e-1` — eleven orders of magnitude, the top of which is a 10% relative kick, some $10^{15}$ times what rounding supplies.
+  - **What *does* move it is whether the trajectory is on the manifold at all.** With $U = V = I$ the factors stay exactly diagonal in `float64` — the off-diagonal entries are exact zeros, which I checked rather than assumed — so the run carries the same rounding as every other run here but cannot be pushed off the aligned-and-balanced manifold. It escapes at 2.00000. Kick it by `delta = 1e-15` and it drops to 1.26508.
+
+  So rounding is only the **trigger**. What it does is knock the trajectory off the exactly-aligned, exactly-balanced manifold on which the modes decouple. That manifold is invariant, so in exact arithmetic the decoupling would stay exact and the escape would sit at $2/s_{\max}$ — which is precisely where the identity-init run above puts it, and where the scalar map puts it. Once the trajectory is off that manifold, $\eta \approx 1.266$ is a property of the full matrix dynamics in the off-manifold directions. It is structural rather than numerical, and independent of both the size and the source of whatever knocked it there; rounding is simply what happens to do it here.
+
+  *(These bisections run a longer escape budget than the figure quoted at the top of this bullet and resolve the boundary about `5e-4` lower — the fourth decimal moves with the step budget, so it is the invariance that carries the argument, not the digits.)*
+
+  The gap between 1.27 and 2 is still the part worth understanding.
 
 ## 8. Outputs
 
@@ -198,6 +210,8 @@ Only after the four outputs are done. Each points at a later phase.
 - **Swap GD for Adam** and watch the mode ordering change. First hint of the Phase 2 question: the optimiser does not just change the speed, it changes what gets learned first.
 
 **TODO —** Sweep η across 0.9 → 2.1 and plot final loss, showing the convergence boundary at η = 1/s_max and the escape at η = 2/s_max — the edge-of-stability window in this system. Fifth output for M1. *(See §7: the 5×5 run actually escapes at ≈1.27, short of 2/s_max. The sweep is where that shows up directly.)*
+
+The sweep should also carry the invariance, not just the threshold: repeat it at two or three precisions and two or three off-manifold perturbation sizes, and show the escape landing in the same place every time. That is the part that distinguishes a property of the system from a property of the arithmetic, and §7 currently argues it in prose from measurements that live nowhere in the repository. It belongs in the committed artefact.
 
 ---
 
