@@ -2,7 +2,7 @@
 
 **Verifying gradient descent against an exact solution**
 
-Phase 0, Milestone 1 — in progress
+Phase 0, Milestone 1 — **complete, 17 September 2026**
 
 | | |
 |---|---|
@@ -11,7 +11,7 @@ Phase 0, Milestone 1 — in progress
 | **Precision** | `float64` |
 | **Runtime** | seconds |
 
-Protocol and pass criteria below are fixed before the run. The reference numbers in §6 come from a `float64` NumPy prototype of the same system; I replace them with my own measurements once the notebook lands.
+Protocol and pass criteria below were fixed before the run. The numbers in §6 are now my own measurements from the notebook, seed 0; they replace the `float64` NumPy prototype figures this document originally carried.
 
 ---
 
@@ -109,42 +109,50 @@ This is the part worth more than the plot. I'm separating **implementation error
 
 Compare the trajectory against the exact discrete recursion (3).
 
-> **Pass:** max relative error < `1e-10`. The prototype sits at 3–6e-12 across seeds. The band is looser than you might expect because the trajectory runs 6000 steps and rounding accumulates. An error near `1e-3` means the code is wrong — most likely the initialisation is not balanced, or $W_1$ was updated using the already-updated $W_2$ instead of the old one.
+> **Pass:** max relative error < `1e-10`. **Measured: 2.4e-12** on the principal run, and 2.4e-12 – 1.3e-11 across seeds 0–5. The band is looser than you might expect because the trajectory runs 6000 steps and rounding accumulates. An error near `1e-3` means the code is wrong — most likely the initialisation is not balanced, or $W_1$ was updated using the already-updated $W_2$ instead of the old one.
 
 ### Criterion 2 — how good is the continuous approximation?
 
 Compare against the closed form (1). It will **not** match to machine precision, and that is not a bug.
 
-Reference values from the prototype:
+Measured, seed 0:
 
 | $\eta$ | steps | vs closed form (1) | vs recursion (3) |
 |---|---|---|---|
-| 0.05 | 1200 | 2.2e-1 | 2.8e-12 |
-| 0.02 | 3000 | 9.7e-2 | 3.4e-12 |
-| 0.01 | 6000 | 5.0e-2 | 3.6e-12 |
-| 0.005 | 12000 | 2.5e-2 | 3.8e-12 |
-| 0.002 | 30000 | 1.0e-2 | 4.7e-12 |
-| 0.001 | 60000 | 5.1e-3 | 3.9e-12 |
+| 0.05 | 1200 | 2.22e-1 | 2.37e-12 |
+| 0.02 | 3000 | 9.67e-2 | 3.52e-12 |
+| 0.01 | 6000 | 4.97e-2 | 2.39e-12 |
+| 0.005 | 12000 | 2.52e-2 | 3.40e-12 |
+| 0.002 | 30000 | 1.02e-2 | 2.99e-12 |
+| 0.001 | 60000 | 5.11e-3 | 3.64e-12 |
 
 The left column is discretisation error and scales as $O(\eta)$. The right column is implementation error and sits at machine precision throughout.
 
-> **Pass:** error falls linearly in $\eta$. Plot max error against $\eta$ on log-log axes and fit the slope — it should come out at 1.0 to within a few percent. On the reference run, a 50× reduction in $\eta$ gave a 44× reduction in error, fitted slope **0.968**.
+> **Pass:** error falls linearly in $\eta$. Plot max error against $\eta$ on log-log axes and fit the slope — it should come out at 1.0 to within a few percent. Measured: a 50× reduction in $\eta$ gave a 43.6× reduction in error, fitted slope **0.968**.
 
 That third plot is what turns this from "I followed a tutorial" into "I verified a first-order convergence result."
 
 ### Why pointwise error alone is a poor criterion
 
-Mid-transition, a small timing offset reads as a large pointwise error. At $\eta = 0.05$ the worst point is step 139, mode 1: empirical 0.4479 against analytical 0.5211. Same curve shape, shifted in time.
+Mid-transition, a small timing offset reads as a large pointwise error. At $\eta = 0.05$ the worst point is step 114, mode 1: empirical 0.0638 against analytical 0.0820. Same curve shape, shifted in time.
 
-So I compare learning times instead — the robust quantity:
+So I compare learning times instead — the robust quantity. Measured at $\eta = 0.01$, seed 0:
 
-| mode | $s_i$ | $k_i$ predicted | $k_i$ reference | error |
-|---|---|---|---|---|
-| 1 | 1.00 | 690.8 | 694 | 0.47% |
-| 2 | 0.62 | 1075.6 | 1079 | 0.32% |
-| 3 | 0.38 | 1690.5 | 1694 | 0.21% |
-| 4 | 0.24 | 2580.9 | 2584 | 0.12% |
-| 5 | 0.15 | 3972.8 | 3976 | 0.08% |
+| mode | $s_i$ | $k_i$ predicted | $k_i$ observed | lag (steps) | lag predicted | error |
+|---|---|---|---|---|---|---|
+| 1 | 1.00 | 690.8 | 694 | 3.2 | 3.45 | 0.47% |
+| 2 | 0.62 | 1075.6 | 1079 | 3.4 | 3.33 | 0.32% |
+| 3 | 0.38 | 1690.5 | 1694 | 3.5 | 3.21 | 0.21% |
+| 4 | 0.24 | 2580.9 | 2584 | 3.1 | 3.10 | 0.12% |
+| 5 | 0.15 | 3972.8 | 3976 | 3.2 | 2.98 | 0.08% |
+
+**The lag is the quantity that means something here; the percentage is not.** The offset between observed and predicted crossing is ≈3.2 steps at *every* mode, and it does not move with $\eta$ — the mode-1 lag measures 3.8, 3.6, 3.2, 3.4, 3.1, 3.2 at $\eta$ = 0.05, 0.02, 0.01, 0.005, 0.002, 0.001, across a 50× range. The percentage varies 5.8× across modes only because $k_i \propto 1/s_i$, and falls with $\eta$ only because $k_i \propto 1/\eta$. In both cases it is the denominator moving, not the discrepancy.
+
+Rescaling time by $\ln(1 + \eta s_i)/(\eta s_i)$ in the logistic solution gives a lag of $\ln(s_i/a_0)/4$ to leading order, independent of $\eta$ — the `lag predicted` column.
+
+> **Caveat.** `argmax` on the boolean crossing quantises to whole steps and biases the observed lag low by up to 1, so this is an order-of-magnitude agreement rather than a tight test. Interpolating the crossing would sharpen it — a stated next step, not done here.
+
+I keep the percentage column because the pass criterion is defined on its maximum.
 
 ## 7. How I'm building it
 
@@ -160,7 +168,15 @@ So I compare learning times instead — the robust quantity:
 - **Run on CPU.** Device transfer dominates computation at this size. This milestone does not touch CUDA at all.
 - **Update both factors from the same $E$.** Stepping $W_2$ first and using it to compute $\nabla_{W_1}$ is a different algorithm and fails Criterion 1.
 - **`svdvals` returns sorted values.** Mode identity can permute if two singular values cross. This spectrum avoids it, but the hazard is general.
-- **For $\eta > 2/s_{\max}$ it diverges.** Worth triggering once deliberately — that is the edge-of-stability threshold appearing in my own code.
+- **Two thresholds, and I had them conflated.** $2/s_{\max}$ is the blow-up threshold. It is *not* the edge of stability, which sits at $1/s_{\max}$ — half of it. With $s_{\max} = 1$ the two land at $\eta = 1$ and $\eta = 2$. As measured:
+
+  - **$\eta < 1/s_{\max}$ — converges.** Final loss 2.4e-29 at $\eta = 0.995$, i.e. machine zero.
+  - **$\eta = 1/s_{\max} = 1.0$ — the fixed point loses stability.** The iterate stays bounded but never converges. The top mode is exactly marginal here (multiplier $1 - 2\eta s = -1$), so the loss decays algebraically rather than geometrically: 2.1e-5 at 6000 steps, 6.3e-6 at 20000 — a factor 3.3 for 3.3× the steps, i.e. $\sim 1/k$. Just above, it is genuinely stuck: 1.1e-2 at $\eta = 1.02$ at both 6000 and 20000 steps.
+  - **$\eta \geq 2/s_{\max} = 2.0$ — escapes to infinity.** Bisection on the single-mode map $a \leftarrow a(1 + \eta(s - a))^2$ puts the boundary at 2.0000001, and it lands there from every starting point I tried ($a_0 = 10^{-6}$, $a = 0.5$, and the fixed point perturbed by $10^{-9}$ and $10^{-12}$).
+
+  Why $1/s_{\max}$ is the edge of stability: the Hessian of $\tfrac{1}{2}(s - uv)^2$ at $u = v = \sqrt{s}$ is $\begin{bmatrix} s & s \\ s & s \end{bmatrix}$, with eigenvalues $2s$ and $0$. So the sharpness is $\lambda_{\max} = 2 s_{\max}$, and the standard $\eta < 2/\lambda_{\max}$ criterion gives $\eta < 1/s_{\max}$. The window $1 < \eta < 2$ — non-convergent but bounded — is the edge-of-stability regime.
+
+  **The full network escapes earlier than the scalar map does, and I should not have assumed otherwise.** The 5×5 run blows up at $\eta \approx 1.266$ (bisection; 1.2654–1.2660 across seeds 0–3), not at 2.0. The clean $\eta = 2$ boundary is a property of the scalar mode map. Above $\eta = 1$ the dynamics are chaotic, so the exact mode decoupling no longer survives contact with floating point: rounding at $10^{-16}$ is amplified and the matrix trajectory leaves the bounded attractor well before the scalar recursion would. Worth triggering deliberately — and the gap between 1.27 and 2 is the part worth understanding.
 
 ## 8. Outputs
 
@@ -181,6 +197,8 @@ Only after the four outputs are done. Each points at a later phase.
 - **Add a third factor.** The exponent in the dynamics changes. I want to predict the effect on transition sharpness before running it.
 - **Swap GD for Adam** and watch the mode ordering change. First hint of the Phase 2 question: the optimiser does not just change the speed, it changes what gets learned first.
 
+**TODO —** Sweep η across 0.9 → 2.1 and plot final loss, showing the convergence boundary at η = 1/s_max and the escape at η = 2/s_max — the edge-of-stability window in this system. Fifth output for M1. *(See §7: the 5×5 run actually escapes at ≈1.27, short of 2/s_max. The sweep is where that shows up directly.)*
+
 ---
 
-*Reference numbers above are from a `float64` NumPy prototype, seed 0, spectrum (1.00, 0.62, 0.38, 0.24, 0.15), $a_0 = 10^{-6}$; loss runs 0.804 → 5.8e-8 over 6000 steps at $\eta = 0.01$. My own values should be close but need not be identical — the random orthogonal factors differ by seed.*
+*Numbers above are measured from `notebooks/deep_linear_dynamics.ipynb`, seed 0, spectrum (1.00, 0.62, 0.38, 0.24, 0.15), $a_0 = 10^{-6}$; loss runs 0.804 → 5.8e-8 over 6000 steps at $\eta = 0.01$. They replace the NumPy prototype figures this document carried while the milestone was open. Values at other seeds differ in the last digits — the random orthogonal factors depend on the seed — so the machine-precision quantities are quoted as ranges where that matters.*

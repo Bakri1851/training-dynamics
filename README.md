@@ -16,13 +16,15 @@ I picked this question because it's tractable without frontier compute: it conce
 
 ## Status
 
-**Phase 0 of 4.** Started September 2026. Nothing here is a result yet.
+**Phase 0 of 4.** Started September 2026. M1 is done; nothing beyond it is.
 
 - [x] Environment; CUDA verified (sm_120)
-- [ ] **M1** — deep linear network verified against its closed-form solution *(in progress)*
+- [x] **M1** — deep linear network verified against its closed-form solution
 - [ ] **M2** — Adam reimplemented from scratch, validated against `torch.optim.AdamW`
 - [ ] **M3** — matched-budget optimiser comparison at a single model size
 - [ ] **M4** — scaling axis; exponents fitted per optimiser with bootstrapped intervals
+
+M1 checks that my training loop does what I think it does. It says nothing about the question above — that starts at M3.
 
 I write each milestone's protocol into [`docs/`](docs/) and fix its pass criteria **before** doing the work.
 
@@ -46,22 +48,33 @@ I'll report negative and inconclusive results. If confidence intervals on $\alph
 training-dynamics/
 ├── docs/                 # protocols, pre-registered before each run
 ├── notebooks/            # exploratory work; figures
-├── src/                  # optimisers, training loop, sweep harness
-├── figures/              # generated output (not committed)
+├── src/                  # optimisers, training loop, sweep harness — empty until Phase 1
+├── figures/              # generated output; the three M1 figures are committed
 ├── requirements.txt
 └── README.md
 ```
 
-I keep exploratory work in notebooks. Anything that runs unattended or contributes to a reported result goes in `src/` as a script — a notebook cannot establish what ran in what order, and that claim is load-bearing here.
+I keep exploratory work in notebooks. M1 is exploratory and lives in one: it is a verification exercise I worked through interactively, and the notebook is re-executed top to bottom so the execution counts are monotonic. From Phase 1 the code moves into `src/` as scripts — once runs are unattended or feed a reported comparison, a notebook cannot establish what ran in what order, and that claim is load-bearing here.
 
 ## Results
 
-*None yet. One entry per milestone as they land.*
+**M1 — deep linear network against its closed-form solution.** Passed 17 September 2026. Protocol, derivation and full numbers: [`docs/m1-deep-linear-dynamics.md`](docs/m1-deep-linear-dynamics.md).
+
+| Check | Criterion | Measured |
+|---|---|---|
+| C1 — vs the exact discrete recursion | < 1e-10 | **2.39e-12** |
+| C2 — fitted log–log convergence slope | 1.0 ± a few % | **0.968** |
+| Learning times vs prediction | < 1% | **0.47%** worst case |
+| Manual gradients vs autograd | — | **5.42e-20** |
+
+Three figures: [`figures/m1_modes.png`](figures/m1_modes.png) — modes learned sequentially, strongest first; [`figures/m1_loss.png`](figures/m1_loss.png) — the loss staircase, one step per mode; [`figures/m1_convergence.png`](figures/m1_convergence.png) — first-order convergence in $\eta$.
+
+What it establishes: the training loop implements gradient descent exactly, so its departure from the continuous closed form is discretisation error rather than a bug, and that error is first-order in the step size — measured, not asserted. This is a verification result about my code. It is not yet evidence about optimisers.
 
 ## Setup
 
 ```bash
-git clone https://github.com/<user>/training-dynamics
+git clone https://github.com/Bakri1851/training-dynamics
 cd training-dynamics
 
 python -m venv .venv
@@ -109,4 +122,4 @@ The core references I'm working from. Fuller notes live in the individual milest
 
 ## Licence
 
-MIT.
+MIT — see [`LICENSE`](LICENSE).
