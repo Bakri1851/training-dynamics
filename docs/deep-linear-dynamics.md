@@ -2,7 +2,7 @@
 
 **Verifying gradient descent against an exact solution**
 
-Phase 0, Milestone 1 — **complete, 17 September 2026**
+Phase 0 — **complete, 17 September 2026**
 
 | | |
 |---|---|
@@ -209,7 +209,7 @@ Only after the four outputs are done. Each points at a later phase.
 - **Add a third factor.** The exponent in the dynamics changes. I want to predict the effect on transition sharpness before running it.
 - **Swap GD for Adam** and watch the mode ordering change. First hint of the Phase 2 question: the optimiser does not just change the speed, it changes what gets learned first.
 
-**TODO —** Sweep η across 0.9 → 2.1 and plot final loss, showing the convergence boundary at η = 1/s_max and the escape at η = 2/s_max — the edge-of-stability window in this system. Fifth output for M1. *(See §7: the 5×5 run actually escapes at ≈1.27, short of 2/s_max. The sweep is where that shows up directly.)*
+**TODO —** Sweep η across 0.9 → 2.1 and plot final loss, showing the convergence boundary at η = 1/s_max and the escape at η = 2/s_max — the edge-of-stability window in this system. Protocol: `docs/edge-of-stability.md`. *(See §7: the 5×5 run actually escapes at ≈1.27, short of 2/s_max. The sweep is where that shows up directly.)*
 
 The sweep should also carry the invariance, not just the threshold: repeat it at two or three precisions and two or three off-manifold perturbation sizes, and show the escape landing in the same place every time. That is the part that distinguishes a property of the system from a property of the arithmetic, and §7 currently argues it in prose from measurements that live nowhere in the repository. It belongs in the committed artefact.
 

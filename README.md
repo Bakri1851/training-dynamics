@@ -16,15 +16,16 @@ I picked this question because it's tractable without frontier compute: it conce
 
 ## Status
 
-**Phase 0 of 4.** Started September 2026. M1 is done; nothing beyond it is.
+**Phase 0 of 4.** Started September 2026. The deep linear network verification is done; nothing beyond it is.
 
 - [x] Environment; CUDA verified (sm_120)
-- [x] **M1** — deep linear network verified against its closed-form solution
-- [ ] **M2** — Adam reimplemented from scratch, validated against `torch.optim.AdamW`
-- [ ] **M3** — matched-budget optimiser comparison at a single model size
-- [ ] **M4** — scaling axis; exponents fitted per optimiser with bootstrapped intervals
+- [x] Deep linear network verified against its closed-form solution
+- [ ] Edge-of-stability sweep — escape threshold as a property of the dynamics
+- [ ] Adam reimplemented from scratch, validated against `torch.optim.AdamW`
+- [ ] Matched-budget optimiser comparison at a single model size
+- [ ] Scaling axis — exponents fitted per optimiser, bootstrapped intervals
 
-M1 checks that my training loop does what I think it does. It says nothing about the question above — that starts at M3.
+The deep linear network check verifies that my training loop does what I think it does. It says nothing about the question above — that starts at the matched-budget optimiser comparison.
 
 I write each milestone's protocol into [`docs/`](docs/) and fix its pass criteria **before** doing the work.
 
@@ -49,16 +50,16 @@ training-dynamics/
 ├── docs/                 # protocols, pre-registered before each run
 ├── notebooks/            # exploratory work; figures
 ├── src/                  # optimisers, training loop, sweep harness — empty until Phase 1
-├── figures/              # generated output; the three M1 figures are committed
+├── figures/              # generated output; the three deep-linear-network figures are committed
 ├── requirements.txt
 └── README.md
 ```
 
-I keep exploratory work in notebooks. M1 is exploratory and lives in one: it is a verification exercise I worked through interactively, and the notebook is re-executed top to bottom so the execution counts are monotonic. From Phase 1 the code moves into `src/` as scripts — once runs are unattended or feed a reported comparison, a notebook cannot establish what ran in what order, and that claim is load-bearing here.
+I keep exploratory work in notebooks. The deep linear network verification is exploratory and lives in one: it is a verification exercise I worked through interactively, and the notebook is re-executed top to bottom so the execution counts are monotonic. From Phase 1 the code moves into `src/` as scripts — once runs are unattended or feed a reported comparison, a notebook cannot establish what ran in what order, and that claim is load-bearing here.
 
 ## Results
 
-**M1 — deep linear network against its closed-form solution.** Passed 17 September 2026. Protocol, derivation and full numbers: [`docs/m1-deep-linear-dynamics.md`](docs/m1-deep-linear-dynamics.md).
+**Deep linear network against its closed-form solution.** Passed 17 September 2026. Protocol, derivation and full numbers: [`docs/deep-linear-dynamics.md`](docs/deep-linear-dynamics.md).
 
 | Check | Criterion | Measured |
 |---|---|---|
@@ -67,7 +68,7 @@ I keep exploratory work in notebooks. M1 is exploratory and lives in one: it is 
 | Learning times vs prediction | < 1% | **0.47%** worst case |
 | Manual gradients vs autograd | — | **5.42e-20** |
 
-Three figures: [`figures/m1_modes.png`](figures/m1_modes.png) — modes learned sequentially, strongest first; [`figures/m1_loss.png`](figures/m1_loss.png) — the loss staircase, one step per mode; [`figures/m1_convergence.png`](figures/m1_convergence.png) — first-order convergence in $\eta$.
+Three figures: [`figures/deep-linear-modes.png`](figures/deep-linear-modes.png) — modes learned sequentially, strongest first; [`figures/deep-linear-loss.png`](figures/deep-linear-loss.png) — the loss staircase, one step per mode; [`figures/deep-linear-convergence.png`](figures/deep-linear-convergence.png) — first-order convergence in $\eta$.
 
 What it establishes: the training loop implements gradient descent exactly, so its departure from the continuous closed form is discretisation error rather than a bug, and that error is first-order in the step size — measured, not asserted. This is a verification result about my code. It is not yet evidence about optimisers.
 
@@ -114,7 +115,7 @@ I measure timing with `torch.utils.benchmark`. Runs execute on a laptop GPU, whi
 
 The core references I'm working from. Fuller notes live in the individual milestone docs.
 
-- Saxe, McClelland & Ganguli (2014), *Exact solutions to the nonlinear dynamics of learning in deep linear networks* — the closed form M1 verifies against.
+- Saxe, McClelland & Ganguli (2014), *Exact solutions to the nonlinear dynamics of learning in deep linear networks* — the closed form the deep linear network check verifies against.
 - Choi et al. (2019), *On empirical comparisons of optimizers for deep learning* — the tuning protocol determines the winner.
 - Schmidt, Schneider & Hennig (2021), *Descending through a crowded valley* — fifteen optimisers under honest budgets.
 - Kaplan et al. (2020) and Hoffmann et al. (2022) — the scaling laws whose exponents this work interrogates.
