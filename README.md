@@ -16,16 +16,17 @@ I picked this question because it's tractable without frontier compute: it conce
 
 ## Status
 
-**Phase 0 of 4.** Started September 2026. The deep linear network verification is done; nothing beyond it is.
+**Phase 0 complete, 20 September 2026. Phase 1 starting.** Two verification milestones are done. Neither is yet evidence about optimisers.
 
 - [x] Environment; CUDA verified (sm_120)
 - [x] Deep linear network verified against its closed-form solution
+- [x] Data pipeline written from scratch and verified against torchvision — [`eurosat-pytorch`](https://github.com/Bakri1851/eurosat-pytorch)
 - [ ] Edge-of-stability sweep — escape threshold as a property of the dynamics
 - [ ] Adam reimplemented from scratch, validated against `torch.optim.AdamW`
 - [ ] Matched-budget optimiser comparison at a single model size
 - [ ] Scaling axis — exponents fitted per optimiser, bootstrapped intervals
 
-The deep linear network check verifies that my training loop does what I think it does. It says nothing about the question above — that starts at the matched-budget optimiser comparison.
+The deep linear network check verifies that my training loop does what I think it does; the pipeline check verifies that the data layer underneath it does, and fixes the seeding and splitting discipline the later comparisons depend on. Both are about the instrument rather than the question — that starts at the matched-budget optimiser comparison.
 
 I write each milestone's protocol into [`docs/`](docs/) and fix its pass criteria **before** doing the work.
 

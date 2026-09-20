@@ -11,6 +11,12 @@ Phase 0 addendum — **open**, pre-registered 17 September 2026
 | **Precision** | `float32`, `float64`, and extended (mpmath, 64-bit mantissa) — the sweep is *about* precision |
 | **Extra dependency** | `mpmath` — not currently in `requirements.txt`, add it |
 
+> **Status — deferred until after Phase 1 (Adam from scratch).** Not abandoned, and nothing below is revised: the pre-registration stands exactly as written, and only the timing has changed.
+>
+> The reason is that `train_variant` needs a training loop parameterised by dtype, initialisation and perturbation — one where those are arguments rather than things baked into the body. Writing a custom optimiser is the exercise that teaches that factoring, so Phase 1 is the right place to learn it and this sweep is the right place to spend it. Attempting them in the other order means learning it badly here and rewriting it there.
+>
+> In the meantime `docs/deep-linear-dynamics.md` §7 carries no measurements. Its quantitative claims have been stripped and what remains is stated as the prediction this document tests.
+
 ---
 
 ## 0. How to work on this — read first
